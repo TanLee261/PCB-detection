@@ -1,0 +1,43 @@
+selected_rule: max_f2
+chosen_on: validation
+beta: 2
+iou_threshold: 0.5
+critical_classes:
+- open_circuit
+- short
+board_decision_rule: defective_if_any_detection_conf_ge_tau
+tau:
+  B0: 0.2
+  B1: 0.13
+candidates:
+  B0:
+    max_f2_tau: 0.2
+    recall_target_tau: null
+    recall_target_note: Not feasible on validation (max recall_critical = 0.8662 <
+      0.95)
+  B1:
+    max_f2_tau: 0.13
+    recall_target_tau: null
+    recall_target_note: Not feasible on validation (max recall_critical = 0.7978 <
+      0.95)
+metrics_at_selected_tau:
+  B0:
+    conf: 0.2
+    precision: 0.6356
+    recall: 0.7559
+    f1: 0.6906
+    f2: 0.7283
+    recall_critical: 0.7691
+    critical_fn_rate: 0.2309
+    board_false_accept_rate: 0.0
+  B1:
+    conf: 0.13
+    precision: 0.4755
+    recall: 0.7097
+    f1: 0.5695
+    f2: 0.646
+    recall_critical: 0.7006
+    critical_fn_rate: 0.2994
+    board_false_accept_rate: 0.0
+locked_at: '2026-09-25T06:05:07.632591+00:00'
+note: test set was not used for threshold selection
