@@ -11,6 +11,10 @@ data/processed/
 data/splits/
 runs/*
 !runs/.gitkeep
+!runs/*/
+runs/*/*
+!runs/*/weights/
+!runs/*/weights/*.pt
 results/*
 !results/ablation_master.csv
 !results/latency_summary.csv
