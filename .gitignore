@@ -1,0 +1,16 @@
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.kaggle/
+
+# Local datasets and generated training artifacts are not versioned.
+data/raw/
+data/processed/
+data/splits/
+runs/*
+!runs/.gitkeep
+results/*
+!results/ablation_master.csv
+!results/latency_summary.csv

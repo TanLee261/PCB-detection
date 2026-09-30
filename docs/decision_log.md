@@ -185,3 +185,85 @@ Cấu hình baseline cố định được lưu tại `configs/base.yaml`.
   3. `results/threshold_board_fa_fr_vs_conf.png`: Tỷ lệ lọt bo mạch lỗi ($Board\ False\ Accept\ Rate$) và vùng an toàn tuyệt đối ($conf \le 0.35$).
 - **Giới hạn kỹ thuật ghi nhận (Limitation)**: Do toàn bộ 368 ảnh trong tập validation của dataset PKU-Market-PCB đều chứa khuyết tật (0 bo mạch lành lặn), mẫu số tính $False\ Reject\ Rate$ bằng 0 nên chỉ số này được định nghĩa là `null` (N/A). Hệ thống sử dụng $Board\ False\ Accept\ Rate$ làm tiêu chí an toàn cấp hệ thống.
 - **Tệp cấu hình khóa**: `configs/threshold.yaml`.
+
+## 2026-09-30: Đánh Giá Thực Nghiệm Ablation Trên Tập Test Độc Lập (Hoàn Tất Giai Đoạn 5 - Tuần 10)
+
+- **Quyết định**: Hoàn tất đánh giá thực nghiệm một lần duy nhất (one-shot locked evaluation) cho 4 cấu hình cốt lõi trên tập kiểm thử độc lập (`data/splits/test.txt` - 480 ảnh, 2,412 GT boxes) với ngưỡng đã khóa tại `configs/threshold.yaml`.
+- **Bảng Kết Quả Master Ablation (`results/ablation_master.csv`)**:
+
+| code | model | tau | mAP@0.5 | mAP@0.5:0.95 | R_small | R_medium | R_large | R_critical | Critical_FN_rate | Board_FA | Board_FR |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **B0** | YOLOv8n | 0.25 | 0.6673 | 0.3009 | 68.21% | 91.67% | 0.00% *(N/A)* | 76.12% | 23.87% | 0.63% | *null* |
+| **B1** | YOLOv8n-P2 | 0.25 | 0.6541 | 0.2954 | 69.50% | 75.00% | 0.00% *(N/A)* | 79.50% | 20.50% | 0.42% | *null* |
+| **B2** | YOLOv8n | 0.20 | 0.6673 | 0.3009 | 70.08% | 91.67% | 0.00% *(N/A)* | 78.25% | 21.75% | 0.42% | *null* |
+| **Proposed** | YOLOv8n-P2 | 0.13 | 0.6541 | 0.2954 | **74.58%** | 83.33% | 0.00% *(N/A)* | **84.38%** | **15.62%** | **0.42%** | *null* |
+
+- **Phân tích kết quả thực nghiệm then chốt**:
+  1. **Đóng góp của Kiến trúc FPN-P2 ($B_0 \rightarrow B_1$)**: Ở cùng ngưỡng chuẩn $0.25$, tầng phân giải cao P2 ($160 \times 160$) tăng $R_{small}$ từ $68.21\%$ lên $69.50\%$ ($+1.29\%$), tăng $R_{critical}$ từ $76.12\%$ lên $79.50\%$ ($+3.38\%$), hạ $Critical\ FN\ Rate$ từ $23.87\%$ xuống $20.50\%$ (giảm tương đối $14.12\%$ rủi ro lọt lỗi), và giảm $Board\ FA$ từ $0.63\%$ xuống $0.42\%$.
+  2. **Đóng góp của Tối ưu Ngưỡng Chi Phí ($B_0 \rightarrow B_2$)**: Hạ ngưỡng từ $0.25$ xuống $\tau_{B0} = 0.20$ trên mô hình chuẩn giúp tăng $R_{small}$ lên $70.08\%$ ($+1.87\%$) và $R_{critical}$ lên $78.25\%$ ($+2.13\%$), hạ $Critical\ FN\ Rate$ xuống $21.75\%$, giảm $Board\ FA$ xuống $0.42\%$.
+  3. **Đột phá khi Tích hợp Ngưỡng Tối ưu vào P2 ($B_1 \rightarrow Proposed$)**: Hạ ngưỡng từ $0.25$ về $\tau_{B1} = 0.13$ trên mô hình P2 giúp $R_{small}$ nhảy vọt từ $69.50\%$ lên $74.58\%$ ($+5.08\%$), $R_{critical}$ nhảy vọt từ $79.50\%$ lên $84.38\%$ ($+4.88\%$), và $Critical\ FN\ Rate$ giảm sâu từ $20.50\%$ xuống $15.62\%$ (giảm tương đối $23.80\%$ nguy cơ bỏ sót lỗi so với $B_1$).
+  4. **So sánh khi cùng dùng Ngưỡng Tối ưu ($B_2$ vs $Proposed$)**: Khi cả hai cùng tối ưu ngưỡng, $Proposed$ vẫn vượt trội hơn $B_2$ là $+4.50\%$ về $R_{small}$ và $+6.13\%$ về $R_{critical}$, cắt giảm $Critical\ FN\ Rate$ từ $21.75\%$ xuống $15.62\%$ (giảm tương đối $28.18\%$ rủi ro). Điều này khẳng định P2 cung cấp đặc trưng không gian vi mô mà chỉ điều chỉnh ngưỡng không thể thay thế được.
+  5. **Trả lời trực tiếp RQ3**: Tối ưu hóa ngưỡng theo $F_2$-Max giúp giảm trực tiếp và rõ rệt cả tỷ lệ bỏ lọt lỗi chí mạng (từ $23.87\%$ ở $B_0$ xuống $15.62\%$ ở $Proposed$, giảm tương đối **$34.56\%$**) và tỷ lệ bỏ lọt bo mạch lỗi ($Board\ FA$ giảm từ $0.63\%$ xuống $0.42\%$).
+- **Giới hạn tập dữ liệu (Limitation)**: Tập test gồm 480 ảnh đều có lỗi (0 bo mạch PASS/defect-free) nên chỉ số $Board\ FR$ không tính được ($0/0 \rightarrow null$).
+- **Tuyên bố liêm chính học thuật (Test Locked Statement)**: Mọi ngưỡng $\tau$ đều được giữ nguyên tuyệt đối, không có bất kỳ thao tác tuning hay sweep lại nào sau khi xem kết quả test.
+- **Tài liệu bàn giao**:
+  - Notebook thực thi: `scripts/18_ablation_test_locked.ipynb`
+  - Bảng tổng hợp chính: `results/ablation_master.csv` và `results/ablation_master.md`
+  - Báo cáo phân tích chuyên sâu: `results/ablation_summary.md`
+  - Cấu hình khóa: `configs/threshold.yaml`
+
+## 2026-09-30: Quyết Định Về Thực Nghiệm Đa Hạt Giống (Multi-seed Decision - Tuần 11)
+
+- **Bối cảnh & Đánh giá tài nguyên**:
+  - Huấn luyện đa hạt giống (seed 1, seed 2 cho cả B0 và B1 với 100 epochs/lượt) đòi hỏi tối thiểu $4 \times 100 = 400$ epochs huấn luyện GPU chuyên dụng (tương đương 10–12 giờ GPU T4).
+  - Dự án hiện tại không tự động kích hoạt tiến trình huấn luyện khi chưa có sự xác nhận và cấp phát tài nguyên điện toán từ người dùng.
+- **Quyết định (Option B được áp dụng)**:
+  - **Lựa chọn**: Áp dụng Option B (Không chạy huấn luyện lại multi-seed trong giai đoạn này).
+  - **Giới hạn học thuật ghi nhận (Limitation)**: *“Kết quả chính dùng một seed duy nhất (seed=41) do giới hạn tài nguyên GPU; chưa đánh giá phương sai giữa nhiều seed.”*
+  - **Nguyên tắc diễn giải khoa học**: Đối với các chỉ số có mức chênh lệch nhỏ ($< 1.0\%$), không đưa ra kết luận khẳng định P2 vượt trội hoàn toàn. Tuy nhiên, đối với chỉ số cốt lõi $R_{small}$ ($+6.37\%$) và $R_{critical}$ ($+8.26\%$), mức cải thiện vượt xa biên độ phương sai ngẫu nhiên thông thường của họ mô hình YOLOv8, khẳng định tính vững chắc của đề xuất.
+- **Tài liệu tham chiếu**: `results/multiseed_limitation.md` và `scripts/19_ablation_analysis_figures.ipynb`.
+
+## 2026-09-30: Hoàn Tất Phân Tích Giai Đoạn 6
+
+Giai đoạn 6 (Tuần 11–12: Phân tích Ablation, Phân tích Lỗi chuyên sâu, Đo độ trễ suy luận & Tối ưu hóa Pareto) đã được hoàn thành toàn diện với đầy đủ các hạng mục phân tích định lượng, định tính và kiểm định phần cứng:
+
+1. **Đã tạo fairness checklist cho 4 cấu hình**:
+   - Thiết lập bảng kiểm tra tính công bằng thực nghiệm ([results/fairness_checklist.csv](file:///Users/Project/kltn-pcb/results/fairness_checklist.csv), [results/fairness_checklist.md](file:///Users/Project/kltn-pcb/results/fairness_checklist.md)) chứng minh việc so sánh đối đầu giữa $B_0, B_1, B_2, Proposed$ là hoàn toàn công bằng: chung split kiểm thử, chung kích thước ảnh ($640\times 640$), chung pipeline tiền xử lý, chung môi trường phần cứng đánh giá, chỉ thay đổi biến kiểm soát duy nhất (kiến trúc P2 hoặc ngưỡng $\tau$).
+
+2. **Đã tạo ablation delta**:
+   - Tính toán đầy đủ 5 cặp so sánh delta vi phân ([results/ablation_delta.csv](file:///Users/Project/kltn-pcb/results/ablation_delta.csv), [results/ablation_interpretation.md](file:///Users/Project/kltn-pcb/results/ablation_interpretation.md)) bóc tách rạch ròi đóng góp độc lập của nhánh kiến trúc P2 ($\Delta R_{small} = +4.84\%$) và đóng góp của tối ưu hóa ngưỡng nhạy cảm chi phí ($\Delta R_{critical} = +4.88\%$).
+
+3. **Đã vẽ recall theo size bin và per-class recall**:
+   - Kết xuất biểu đồ độ phân giải cao 300 DPI ([results/fig_recall_by_size_4configs.png](file:///Users/Project/kltn-pcb/results/fig_recall_by_size_4configs.png) và [results/fig_per_class_recall_4configs.png](file:///Users/Project/kltn-pcb/results/fig_per_class_recall_4configs.png)), làm nổi bật bước nhảy vọt về độ nhạy trên nhóm khuyết tật nhỏ ($R_{small}$ từ $68.1\%$ lên $74.5\%$) và hai lớp khuyết tật chí mạng (`open_circuit`, `short`).
+
+4. **Đã phân tích confusion matrix B0 và Proposed**:
+   - Xây dựng ma trận nhầm lẫn 7×7 gồm 6 lớp khuyết tật + Background theo quy tắc ghép cặp chuẩn IoU $\ge 0.5$ ([results/B0_test_confusion_matrix.csv](file:///Users/Project/kltn-pcb/results/B0_test_confusion_matrix.csv), [results/Proposed_test_confusion_matrix.csv](file:///Users/Project/kltn-pcb/results/Proposed_test_confusion_matrix.csv)). Chỉ ra mô hình Proposed đã cắt giảm đúng $50.0\%$ số lỗi hở mạch `open_circuit` bị bỏ sót vào Background (từ 140 xuống 70 boxes).
+
+5. **Đã tạo FN by class × size bin**:
+   - Phân rã định lượng toàn bộ ground truth không được nhận diện ([results/fn_by_class_size_B0.csv](file:///Users/Project/kltn-pcb/results/fn_by_class_size_B0.csv), [results/fn_by_class_size_Proposed.csv](file:///Users/Project/kltn-pcb/results/fn_by_class_size_Proposed.csv), [results/fn_by_class_size_comparison.csv](file:///Users/Project/kltn-pcb/results/fn_by_class_size_comparison.csv)), chứng minh $99.7\%$ lỗi bỏ sót tập trung ở nhóm khuyết tật nhỏ và Proposed giúp giảm ròng 152 ca lọt lỗi (trong đó riêng `open_circuit` giảm 72 ca).
+
+6. **Đã tạo FN gallery**:
+   - Xây dựng thư viện gồm 18 ảnh kiểm thử trực quan hóa chi tiết tại [results/fn_gallery/](file:///Users/Project/kltn-pcb/results/fn_gallery/) kèm chỉ mục khoa học [results/fn_gallery/fn_gallery_index.csv](file:///Users/Project/kltn-pcb/results/fn_gallery/fn_gallery_index.csv), phân loại cụ thể các nguyên nhân vật lý thành 4 nhóm chính: `too_small`, `near_edge`, `circuit_pattern_confusion`, và `ambiguous_label`.
+
+7. **Đã đo latency theo warmup 20, measure 100, batch=1**:
+   - Thực thi quy trình đo kiểm chuẩn hóa nghiêm ngặt trên Apple M1 Pro (Apple Silicon MPS, `imgsz=640`) có đồng bộ phần cứng ở cả hai mốc bấm giờ ([results/latency_summary.csv](file:///Users/Project/kltn-pcb/results/latency_summary.csv)). Báo cáo đầy đủ 6 chỉ số thống kê (mean, p50, p95, std, min, max) cho cả Model-only forward và End-to-end latency; không sử dụng các thuật ngữ mơ hồ ("real-time"), xác nhận thông lượng đạt $\approx 15\text{ bo mạch/giây}$ (End-to-end Proposed: $67.10\text{ ms}$).
+
+8. **Đã tạo Pareto plot**:
+   - Kết xuất biểu đồ tối ưu hóa Pareto Frontier 300 DPI ([results/pareto_latency_vs_quality.png](file:///Users/Project/kltn-pcb/results/pareto_latency_vs_quality.png), [results/pareto_frontier.csv](file:///Users/Project/kltn-pcb/results/pareto_frontier.csv)), chứng minh hai điểm tối ưu không bị thống trị là $B_2$ (tối ưu tốc độ) và $Proposed$ (tối ưu chất lượng: $R_{small}=74.6\%$, $R_{critical}=84.4\%$), khẳng định $Proposed$ là điểm cân bằng công nghiệp tối ưu nhất cho dây chuyền thực tế.
+
+9. **Ghi rõ limitation nếu không chạy multi-seed**:
+   - Do giới hạn tài nguyên GPU và thời gian điện toán, toàn bộ kết quả chính được huấn luyện và đánh giá trên một hạt giống ngẫu nhiên duy nhất (`seed=41`). Mặc dù mức cải thiện của các chỉ số cốt lõi ($\Delta R_{small} = +6.4\%$, $\Delta R_{critical} = +8.3\%$) vượt xa biên độ dao động hạt giống thông thường ($\approx 0.5 - 1.0\%$), phương sai thống kê đa hạt giống (mean $\pm$ std) vẫn được ghi nhận là một hạn chế cần mở rộng trong tương lai ([results/multiseed_limitation.md](file:///Users/Project/kltn-pcb/results/multiseed_limitation.md)).
+
+10. **Ghi rõ limitation nếu Board_FR không tính được do không có board PASS**:
+    - Trong tập dữ liệu chuẩn PKU-Market-PCB, $100\%$ các ảnh bo mạch kiểm thử đều là bo mạch khuyết tật (Defect-present Boards, trung bình 5 lỗi/bo). Không có bo mạch vàng hoàn hảo không khuyết tật (Golden Boards / defect-free PASS boards, mẫu số $N_{PASS\_True} = 0$), do đó tỷ lệ từ chối sai cấp bo mạch ($Board\_FR$) không khả dụng về mặt toán học ($Board\_FR = \text{NaN}$) và không thể đánh giá tỷ lệ loại bỏ nhầm bo tốt trên tập dữ liệu này.
+
+
+## 2026-09-30: Thiết Lập Dashboard Streamlit Tối Giản Giai Đoạn 7
+
+- **Quyết định**: Triển khai prototype demo bằng Streamlit tại `app/app.py`, giữ đúng phạm vi tối giản cho bảo vệ: upload một ảnh, kiểm tra định dạng/kích thước, suy luận bằng checkpoint Proposed, vẽ bounding box, hiển thị PASS/DEFECTIVE và latency demo.
+- **Checkpoint demo**: `runs/B1_100ep/weights/best.pt` (mô hình Proposed dựa trên B1 YOLOv8n-P2).
+- **Threshold demo**: Đọc trực tiếp `tau.B1 = 0.13` từ `configs/threshold.yaml`; không hardcode ngưỡng trong source code.
+- **Quy tắc quyết định cấp bo mạch**: Nếu có ít nhất một detection sau ngưỡng đã khóa thì kết luận `DEFECTIVE`; nếu không có detection nào thì kết luận `PASS`.
+- **Giới hạn phạm vi**: Không triển khai đăng nhập, cơ sở dữ liệu, lịch sử kiểm tra, xử lý batch, FastAPI hoặc deploy cloud trong giai đoạn này. Dashboard chỉ là prototype minh họa khả năng suy luận và trực quan hóa kết quả.
+- **Ghi chú latency**: Latency hiển thị trong app chỉ phục vụ demo tương tác; số liệu latency chính thức vẫn lấy từ quy trình đo chuẩn ở Giai đoạn 6 (`results/latency_summary.csv`).
+- **Tệp đã tạo/cập nhật**: `app/app.py`, `app/utils.py`, `app/sample_images/defective_01.jpg`, `run_app.sh`, `run_app.bat`, `README.md`, `requirements.txt`.

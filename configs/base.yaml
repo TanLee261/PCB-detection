@@ -1,0 +1,17 @@
+# Frozen baseline configuration. Do not change these values between experiments.
+model: yolov8n.pt
+# 640 px preserves more detail for small PCB defects; reducing it directly harms small-object detection.
+imgsz: 640
+epochs: 20
+batch: 16
+optimizer: auto
+seed: 41
+patience: 30
+classes:
+  - missing_hole
+  - mouse_bite
+  - open_circuit
+  - short
+  - spur
+  - spurious_copper
+split_ratio: [0.7, 0.15, 0.15]

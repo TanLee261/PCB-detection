@@ -1,0 +1,50 @@
+# Cau hinh phan tich bo sung Tuan 3: so sanh PKU-Market-PCB va DeepPCB.
+analysis:
+  imgsz: 640
+  image_suffixes: [".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"]
+  smoke_images_per_dataset: 50
+  size_bins:
+    small_max_exclusive: 1024
+    medium_max_inclusive: 9216
+  output:
+    compatibility_csv: results/dataset_compatibility.csv
+    class_distribution_figure: results/dataset_compare_mapped_class_distribution.png
+    relative_area_figure: results/dataset_compare_mapped_relative_area_histogram.png
+
+datasets:
+  PKU:
+    path: data/raw/PKU-Market-PCB(Data enhanced version)
+    image_directory: images
+    label_directory: labels
+    annotation_format: yolo
+    class_id_offset: 0
+  DeepPCB:
+    path: data/raw/DeepPCB
+    image_directory: images
+    label_directory: labels
+    # Nhãn goc DeepPCB luu x1 y1 x2 y2 class (class 1-based), duoc quy doi trong notebook.
+    annotation_format: xyxy_class_last
+    class_id_offset: -1
+
+# Chi nam lop nay duoc dua vao cac metric co gioi han mapping.
+canonical_classes:
+  - canonical_class: open_circuit
+    PKU: {id: 2, name: open_circuit}
+    DeepPCB: {id: 0, name: open}
+  - canonical_class: short
+    PKU: {id: 3, name: short}
+    DeepPCB: {id: 1, name: short}
+  - canonical_class: mouse_bite
+    PKU: {id: 1, name: mouse_bite}
+    DeepPCB: {id: 2, name: mousebite}
+  - canonical_class: spur
+    PKU: {id: 4, name: spur}
+    DeepPCB: {id: 3, name: spur}
+  - canonical_class: spurious_copper
+    PKU: {id: 5, name: spurious_copper}
+    DeepPCB: {id: 4, name: copper}
+
+# Chi dung de kiem tra va tai lieu hoa; khong dua vao metric co gioi han mapping.
+excluded_classes:
+  PKU: {id: 0, name: missing_hole}
+  DeepPCB: {id: 5, name: pin-hole}
